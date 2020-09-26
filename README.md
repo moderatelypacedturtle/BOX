@@ -4,7 +4,7 @@ A Particle project named BOX
 
 ## Welcome to your project!
 
-Every new Particle project is composed of 3 important elements that you'll see have been created in your project directory for CAPSTONE.
+Every new Particle project is composed of 3 important elements that you'll see have been created in your project directory for BOX.
 
 This project is for a 'time tracking cube' it uses LED matrix screens and has the functionality of a world clock, alarm clock, and shows the weather. It is controlled using the Blynk app on your phone and you can change modes by rotating the cube to whichever face you want to see.
 

@@ -1,0 +1,99 @@
+#include <blynk.h>
+#include <ntp-time.h>
+int currentTimeZone = 5;  // see if int still works, should work
+NtpTime* ntpTime;
+
+String hhmmss(unsigned long int now, int timeZone)  //format value as "hh:mm:ss"
+{
+    String hour;
+    if(Time.hour(now)-timeZone<0){
+        hour = String::format("%02i",Time.hour(now)-timeZone+24);
+    } else if(Time.hour(now)-timeZone>24) {
+        hour = String::format("%02i",Time.hour(now)-timeZone-24);
+    } else {
+        hour = String::format("%02i",Time.hour(now)-timeZone);
+    }
+    String minute = String::format("%02i",Time.minute(now));
+    return hour + ":" + minute;
+}
+
+void setup() {
+  Blynk.begin("8d7cb678e67a48d49e443ce542cbf215",IPAddress(167,99,150,124),8080);
+  Serial.begin(9600);
+}
+
+BLYNK_WRITE(V6){
+  switch(param.asInt()){
+    case 1:{
+      currentTimeZone = 7;
+      break;  
+    }
+    case 2:{
+      currentTimeZone = 6;
+      break;
+    }
+    case 3:{
+      currentTimeZone = 5;
+      break;
+    }
+    case 4:{
+      currentTimeZone = 4;
+      break;
+    }
+    case 5:{
+      currentTimeZone = 3;
+      break;
+    }
+    case 6:{
+      currentTimeZone = 0;
+      break;
+    }
+    case 7:{
+      currentTimeZone = -1;
+      break;
+    }
+    case 8:{
+      currentTimeZone = -2;
+      break;
+    }
+    case 9:{
+      currentTimeZone = -3;
+      break;
+    }
+    case 10:{
+      currentTimeZone = -4;
+      break;
+    }
+    case 11:{
+      currentTimeZone = -8;
+      break;
+    }
+    case 12:{
+      currentTimeZone = -9;
+      break;
+    }
+    case 13:{
+      currentTimeZone = -10;
+      break;
+    }
+    case 14:{
+      currentTimeZone = -12;
+      break;
+    }
+  }
+}
+
+void loop() {
+  Blynk.run();
+  BLYNK_WRITE(V6);
+  Serial.println(currentTimeZone);
+  delay(1000);
+  static unsigned long waitMillis;
+  struct epochMillis now;  //holds the unix epoch time to millisecond resolution
+  if(millis() > waitMillis) {
+    ntpTime->nowMillis(&now);  //get the current NTP time
+    Serial.println(hhmmss(now.seconds, currentTimeZone));
+    Serial.println(currentTimeZone);
+  }
+  delay(1000);
+}

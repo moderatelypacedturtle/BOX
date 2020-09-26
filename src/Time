@@ -1,0 +1,55 @@
+#include "ntp-time.h"
+#include "neomatrix.h"
+#define PIXEL_PIN A3
+#define PIXEL_TYPE WS2812B
+uint8_t currentTimeZone = 5;
+NtpTime* ntpTime;
+Adafruit_NeoMatrix matrix = Adafruit_NeoMatrix(8, 8, PIXEL_PIN,
+  NEO_MATRIX_TOP     + NEO_MATRIX_RIGHT +
+  NEO_MATRIX_COLUMNS + NEO_MATRIX_PROGRESSIVE,
+  PIXEL_TYPE);
+
+String hhmmss(unsigned long int now, int timeZone)  //format value as "hh:mm:ss"
+{
+    String hour;
+    if(Time.hour(now)-timeZone<0){
+        hour = String::format("%02i",Time.hour(now)-timeZone+12);
+    } else {
+        hour = String::format("%02i",Time.hour(now)-timeZone);
+    }
+    String minute = String::format("%02i",Time.minute(now));
+    return hour + ":" + minute;
+}
+
+void setup() {
+// CurrentTime
+Serial.begin(9600);
+ntpTime = new NtpTime(15);
+ntpTime->start();
+matrix.begin();
+matrix.setTextWrap(false);
+matrix.setBrightness(30);
+matrix.setTextColor(matrix.Color(80,255,0));
+}
+
+int x = matrix.width();
+
+void loop() {
+// DISPLAY TIME
+    static unsigned long waitMillis;
+    struct epochMillis now;  //holds the unix epoch time to millisecond resolution
+    if(millis() > waitMillis) {
+        ntpTime->nowMillis(&now);  //get the current NTP time
+        Serial.println(hhmmss(now.seconds, currentTimeZone));
+        matrix.fillScreen(0);
+        matrix.setCursor(x, 0);
+        matrix.print(hhmmss(now.seconds, currentTimeZone));
+        if(--x < -36) {
+         x = matrix.width();
+         matrix.setTextColor(matrix.Color(255, 0, 0));
+        }
+        matrix.show();
+        String time = hhmmss(Time.now(), currentTimeZone);
+        waitMillis = millis() + (500);  // wait 15 seconds
+    }
+}

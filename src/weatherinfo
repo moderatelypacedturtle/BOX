@@ -1,0 +1,96 @@
+#include <google-maps-device-locator.h>
+#include "Particle.h"
+#include "application.h"
+#include <JsonParserGeneratorRK.h>
+#include <neomatrix.h>
+#define PIXEL_PIN A3
+#define PIXEL_TYPE WS2812B
+SYSTEM_THREAD(ENABLED);
+Thread Weather;
+Thread Display;
+unsigned int nextTime = 30;    // Next time to contact the server
+String tempReceived = "";
+String currentStatus;
+String precipProb;
+JsonParserStatic<512, 50> jsonParser;
+String global_lat = ""; //variables for location data
+String global_lon = "";
+String global_ip = ""; //through here
+Adafruit_NeoMatrix matrix = Adafruit_NeoMatrix(16, 8, PIXEL_PIN,
+  NEO_MATRIX_TOP     + NEO_MATRIX_RIGHT +
+  NEO_MATRIX_COLUMNS + NEO_MATRIX_PROGRESSIVE,
+  PIXEL_TYPE);
+int x = matrix.width();
+
+void setup(){
+    Weather = Thread("name", weatherFunction);
+    Display = Thread("nubeds", displayFunction);
+    Serial.begin(9600);
+    Particle.subscribe("particle/device/ip", ipHandler);//subscribes to global IP get
+    Particle.subscribe("hook-response/geoip", geoIpHandler, MY_DEVICES);
+    Particle.subscribe("hook-response/tempRead", tempHandler, MY_DEVICES);
+    matrix.begin();
+    matrix.setTextWrap(false);
+    matrix.setBrightness(30);
+    matrix.setTextColor(matrix.Color(80,255,0));
+}
+
+void weatherFunction(){
+  while(1){
+  // Step 1: get IP
+  Particle.publish("particle/device/ip"); //requests public ip from particle
+  delay(4000);
+  // Step 2: get geo location
+  Particle.publish("geoip", global_ip.c_str(), PRIVATE); //requests data from particle and translates it into a char*
+  delay(4000);
+  // Step 3: get temp
+  char data[64]; //data buffer for integrating lat and lon for webhook
+  sprintf(data, "%s,%s", global_lat.c_str(), global_lon.c_str());//move to geoip handler so is step by step
+  Particle.publish("tempRead", data, PRIVATE);//                    that way it is event driven
+  delay(10000);
+  }
+}
+
+void tempHandler(const char *event, const char *data) { //callback for temp webhook
+  // Handle the integration response
+  jsonParser.addString(data); //adds json to buffer
+  if (jsonParser.parse()) {
+    jsonParser.getOuterValueByKey("tempReceived", tempReceived); //parses
+    jsonParser.getOuterValueByKey("currentStatus", currentStatus);
+    jsonParser.getOuterValueByKey("percipProb", precipProb);
+    // Put code to do something with tempMin and tempMax here
+    Serial.printlnf("tempReceived=%s, currentStatus=%s, precipitationProbability:%s", tempReceived.c_str(), currentStatus.c_str(), precipProb.c_str()); //translates String to char* 
+  }
+  jsonParser.clear();//clears buffer so that geographical data can be parsed correctly
+}
+void geoIpHandler(const char *event, const char *data) { //callback for geoip webhook
+  jsonParser.addString(data); //this input uses a response template on the particle console to simplify the response
+  if (jsonParser.parse()) {
+    jsonParser.getOuterValueByKey("latitude", global_lat);
+    jsonParser.getOuterValueByKey("longitude", global_lon);
+    Serial.printlnf("lat=%s,lon=%s", global_lat.c_str(), global_lon.c_str());
+  }
+  jsonParser.clear(); //clears the parser buffer so the temp can be parsed correctly
+}
+void ipHandler(const char *event, const char *data) {
+  global_ip = data; //sets ip
+  Serial.printlnf("global_ip=%s", global_ip.c_str()); //prints ip
+}
+
+void displayFunction(){
+  if (tempReceived!="")
+  {
+    matrix_1.fillScreen(0);
+    matrix_1.setCursor(x1, 0);
+    matrix_1.print(tempReceived + "F " + currentStatus + " Rain: " + precipProb + "%");
+    if(--x1 < -200) {
+    x1 = matrix_1.width();
+    }
+    matrix_1.show();
+    delay(100);
+  }
+}
+
+void loop(){
+  delay(CONCURRENT_WAIT_FOREVER);
+}

@@ -1,0 +1,58 @@
+#include "SparkCorePolledTimer.h"
+#include "ntp-time.h"
+uint8_t currentTimeZone = -6;
+NtpTime* ntpTime;
+
+SparkCorePolledTimer updateTimer(5000);
+
+void OnTimer(void) {  //Handler for the timer, will be called automatically
+  Serial.println("Hello");
+}
+
+String hhmmss(unsigned long int now, int timeZone)  //format value as "hh:mm:ss"
+{
+    int time = 0;
+    String hour = "";
+    if (Time.hour(now) + timeZone < 0 )
+    {
+        time = Time.hour(now) -6;
+        time = time + 24;
+        hour = String (time);
+    }
+    else 
+    {
+       hour = String(Time.hour(now) + timeZone);
+    }
+   
+   String minute = String::format("%02i",Time.minute(now));
+   String second = String::format("%02i",Time.second(now));
+   return hour + ":" + minute + ":" + second;
+};
+void setup() {
+// Screen
+pinMode(A3,OUTPUT);
+strip.begin();
+strip.show();
+// Timer
+updateTimer.SetCallback(OnTimer);
+// CurrentTime
+ntpTime = new NtpTime(15);  // Do an ntp update every 15 minutes;
+ntpTime->start();
+}
+
+void loop() {
+    colorAll(strip.Color(255,255,255), 1); // screen
+    updateTimer.Update();  // Timer
+// DISPLAY TIME
+    static unsigned long waitMillis;
+    struct epochMillis now;  //holds the unix epoch time to millisecond resolution
+    if(millis() > waitMillis) {
+        ntpTime->nowMillis(&now);  //get the current NTP time
+        Particle.publish("NTP clock is: ", hhmmss(now.seconds, + currentTimeZone) + "." + String::format("%03i",now.millis));
+        Particle.publish("System clock is: ", hhmmss(Time.now(),+ currentTimeZone));
+        Serial.println(hhmmss(now.seconds,+ currentTimeZone) + "." + String::format("%03i",now.millis));
+        Serial.println("System: " + hhmmss(Time.now(),+ currentTimeZone));
+        waitMillis = millis() + (15*1000);  // wait 15 seconds
+
+}
+// Working code of Time, Timer and screen```

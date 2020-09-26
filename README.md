@@ -1,10 +1,10 @@
-# CAPSTONE
+# BOX
 
-A Particle project named CAPSTONE
+A Particle project named BOX
 
 ## Welcome to your project!
 
-Every new Particle project is composed of 3 important elements that you'll see have been created in your project directory for CAPSTONE.
+Every new Particle project is composed of 3 important elements that you'll see have been created in your project directory for BOX.
 
 This project is for a 'time tracking cube' it uses LED matrix screens and has the functionality of a world clock, alarm clock, and shows the weather. It is controlled using the Blynk app on your phone and you can change modes by rotating the cube to whichever face you want to see.
 
@@ -35,3 +35,7 @@ When you're ready to compile your project, make sure you have the correct Partic
 - Everything in the `/src` folder, including your `.ino` application file
 - The `project.properties` file for your project
 - Any libraries stored under `lib/<libraryname>/src`
+
+
+
+This project was completed by Smriti Shankar, Dylan Wu, and Alejandro Yepes in July 2019
